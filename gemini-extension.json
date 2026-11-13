@@ -1,5 +1,6 @@
 {
   "name": "zero-hop-code-skill",
-  "version": "1.0.0",
+  "description": "Zero-dependency, offline BM25/IDF + AST-boundary codebase search. Single-hop retrieval for large files, monolithic templates, and multi-word queries — returns exact line ranges for immediate surgical edits without extra file reads.",
+  "version": "1.0.1",
   "contextFileName": "GEMINI.md"
 }
