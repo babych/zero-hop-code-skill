@@ -610,8 +610,13 @@ def search(query, top_k=3, mode="smart", root_dir="."):
             "saved_bytes": saved_bytes,
             "est_tokens_saved": saved_bytes // 4,
         }
-        with (log_dir / "zero-hop-usage.jsonl").open("a", encoding="utf-8") as f:
+        log_file = log_dir / "zero-hop-usage.jsonl"
+        with log_file.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry) + "\n")
+        if log_file.stat().st_size > 2_000_000:
+            lines = log_file.read_text(encoding="utf-8").splitlines()
+            if len(lines) > 10000:
+                log_file.write_text("\n".join(lines[-10000:]) + "\n", encoding="utf-8")
     except Exception:
         pass
 
