@@ -128,5 +128,18 @@ python -m unittest discover -s tests -v
 
 ---
 
+## 📊 Observability
+
+Every search automatically appends a JSONL entry (`ts`, `query`, `files`, `total_bytes`, `slice_bytes`, `saved_bytes`, `est_tokens_saved`) to `~/.gemini/logs/zero-hop-usage.jsonl`.
+
+```bash
+# Print CLI summary of searches, bytes saved, and estimated tokens saved
+python scripts/zero_hop_stats.py
+```
+
+Or open `scripts/zero_hop_dashboard.html` in a browser and select `~/.gemini/logs/zero-hop-usage.jsonl`.
+
+---
+
 ## 📄 License
 MIT License. Free to use, modify, and share.

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zero-Hop Code Skill Dashboard</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 2rem; }
+    .container { max-width: 960px; margin: 0 auto; }
+    h1 { margin: 0 0 0.5rem; font-size: 1.5rem; }
+    .sub { color: #94a3b8; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    .drop { border: 2px dashed #334155; border-radius: 10px; padding: 1.5rem; text-align: center; margin-bottom: 1.5rem; cursor: pointer; background: #1e293b; }
+    .drop:hover { border-color: #38bdf8; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .card { background: #1e293b; padding: 1rem; border-radius: 8px; border: 1px solid #334155; }
+    .label { font-size: 0.8rem; color: #94a3b8; }
+    .val { font-size: 1.5rem; font-weight: 700; color: #38bdf8; margin-top: 0.25rem; }
+    table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; margin-bottom: 1.5rem; }
+    th, td { text-align: left; padding: 0.65rem 0.9rem; border-bottom: 1px solid #334155; font-size: 0.85rem; }
+    th { background: #0f172a; color: #94a3b8; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Zero-Hop Code Skill Observability</h1>
+    <div class="sub">Load <code>~/.gemini/logs/zero-hop-usage.jsonl</code> to inspect token &amp; byte savings.</div>
+    <label class="drop">
+      <input type="file" id="fileInput" accept=".jsonl,.json,.txt" style="display:none" />
+      Click to select <code>zero-hop-usage.jsonl</code>
+    </label>
+    <div class="grid">
+      <div class="card"><div class="label">Total Searches</div><div class="val" id="calls">0</div></div>
+      <div class="card"><div class="label">Est. Tokens Saved</div><div class="val" id="tokens">0</div></div>
+      <div class="card"><div class="label">Bytes Saved</div><div class="val" id="bytes">0</div></div>
+      <div class="card"><div class="label">Avg Reduction</div><div class="val" id="pct">0%</div></div>
+    </div>
+    <table>
+      <thead><tr><th>Timestamp</th><th>Query</th><th>Files</th><th>Est. Tokens Saved</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <script>
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      const entries = text.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+        try { return JSON.parse(l); } catch { return null; }
+      }).filter(Boolean);
+      const totalBytes = entries.reduce((s, x) => s + (x.total_bytes || 0), 0);
+      const savedBytes = entries.reduce((s, x) => s + (x.saved_bytes || 0), 0);
+      const tokens = entries.reduce((s, x) => s + (x.est_tokens_saved || 0), 0);
+      document.getElementById('calls').textContent = entries.length.toLocaleString();
+      document.getElementById('tokens').textContent = tokens.toLocaleString();
+      document.getElementById('bytes').textContent = savedBytes.toLocaleString();
+      document.getElementById('pct').textContent = totalBytes ? Math.round((savedBytes / totalBytes) * 100) + '%' : '0%';
+      const tbody = document.getElementById('rows');
+      tbody.innerHTML = entries.slice(-50).reverse().map(x => `
+        <tr>
+          <td>${(x.ts || '').slice(0, 19).replace('T', ' ')}</td>
+          <td>${(x.query || '').replace(/</g, '&lt;')}</td>
+          <td>${(x.files || []).join(', ')}</td>
+          <td>${(x.est_tokens_saved || 0).toLocaleString()}</td>
+        </tr>
+      `).join('');
+    });
+  </script>
+</body>
+</html>

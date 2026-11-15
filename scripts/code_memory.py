@@ -570,6 +570,9 @@ def search(query, top_k=3, mode="smart", root_dir="."):
         return
 
     print(f"\n🔍 Top {len(selected)} relevant code locations for: '{query}'\n" + "=" * 68)
+    total_file_bytes = 0
+    slice_bytes = 0
+    seen_files = set()
     for rank, (score, item) in enumerate(selected):
         total_l = item.get("total_lines", "?")
         show_full = (mode == "full") or (mode == "smart" and rank == 0)
@@ -585,7 +588,32 @@ def search(query, top_k=3, mode="smart", root_dir="."):
         )
         for line_no, text in view_lines:
             print(f"   L{line_no:<4} | {text}")
+            slice_bytes += len(text.encode("utf-8", errors="ignore")) + 1
+        if item["file"] not in seen_files:
+            seen_files.add(item["file"])
+            try:
+                total_file_bytes += (Path(root_dir) / item["file"]).stat().st_size
+            except OSError:
+                pass
         print("-" * 68)
+    try:
+        from datetime import datetime, timezone
+        log_dir = Path.home() / ".gemini" / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        saved_bytes = max(0, total_file_bytes - slice_bytes)
+        entry = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "query": query,
+            "files": sorted(seen_files),
+            "total_bytes": total_file_bytes,
+            "slice_bytes": slice_bytes,
+            "saved_bytes": saved_bytes,
+            "est_tokens_saved": saved_bytes // 4,
+        }
+        with (log_dir / "zero-hop-usage.jsonl").open("a", encoding="utf-8") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception:
+        pass
 
 
 def parse_cli_args(argv):
